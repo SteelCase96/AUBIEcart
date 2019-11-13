@@ -1,0 +1,4 @@
+Joystick	KEYWORD1
+read	KEYWORD2
+getX	KEYWORD2
+getY	KEYWORD2

@@ -1,11 +1,14 @@
 #ifndef Motor_h
 #define Motor_h
 
-/*
-	This is a library for a 12 V DC motor
-*/
-
 #include "Arduino.h"
+
+/*
+  This is a library for using a 12 VDC motor with the L298N
+  dual H-bridge motor driver, and was developed by S.Casey on
+  Thursday, November 14th, 2019 for the AUBIE Cart senior 
+  design project.
+*/
 
 class Motor{
 	private:

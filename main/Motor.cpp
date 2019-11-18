@@ -2,6 +2,10 @@
 #include "Motor.h"
 
 /*
+  This is a library for using a 12 VDC motor with the L298N
+  dual H-bridge motor driver, and was developed by S.Casey on
+  Thursday, November 14th, 2019 for the AUBIE Cart senior 
+  design project.
 */
 
 // Constructor

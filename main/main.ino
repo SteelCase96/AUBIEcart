@@ -1,4 +1,4 @@
-/*
+/*  Version 1.0.9
  * This program is for operating the AUBIE Cart, and was developed for
  * the AUBIE Cart senior design project.
  */
@@ -31,11 +31,12 @@
 // ----- Main Variables -----
 char buf[50];
 bool runDiagnostics = true;
+uint16_t runCount = 0;
 
 // ----- Object Declerations -----
 Joystick joystick(A1,A0,8);
-Motor motorL(enA,in1,in2,false);
-Motor motorR(enB,in3,in4,true);
+Motor motorR(enA,in1,in2,false);
+Motor motorL(enB,in3,in4,false);
 // ----- Functions -----
 
 // - From the joystick axis values, determine and set the speed and direction of the motors.
@@ -47,36 +48,36 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
 
   if(runDiagnostics == true){
     sprintf(buf,"X: %d, Y: %d",xAxis,yAxis);
-    Serial1.println(buf);
+    Serial.println(buf);
   }
   
-  // Get the direction and basic speed for the motors.
+  // Get the direction and speed for the motors.
   // Forward
-  if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis<lowThresh)){
+  if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis>highThresh)){
     if(runDiagnostics == true){
-      Serial1.println("Driving forward...");
+      Serial.println("Driving forward...");
     }
-    motorL.setDirection(-1);
-    motorR.setDirection(-1);
+    motorL.setDirection(1);
+    motorR.setDirection(1);
     tempSpeed = map(yAxis,lowThresh,minThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
       sprintf(buf,"Speed: %d",tempSpeed);
-      Serial1.println(buf);
+      Serial.println(buf);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
     
   //Backward
-  }else if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis>highThresh)){
+  }else if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis<lowThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Driving backward...");
+      Serial.println("Driving backward...");
     }
-    motorL.setDirection(1);
-    motorR.setDirection(1);
+    motorL.setDirection(-1);
+    motorR.setDirection(-1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
       sprintf(buf,"Speed: %d",tempSpeed);
-      Serial1.println(buf);
+      Serial.println(buf);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
@@ -84,14 +85,14 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Left
   }else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxis<lowThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Rotating left...");
+      Serial.println("Rotating left...");
     }
     motorL.setDirection(-1);
     motorR.setDirection(1);
     tempSpeed = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
       sprintf(buf,"Speed: %d",tempSpeed);
-      Serial1.println(buf);
+      Serial.println(buf);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
@@ -99,14 +100,14 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Right
   }else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxis>highThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Rotating right...");
+      Serial.println("Rotating right...");
     }
     motorL.setDirection(1);
     motorR.setDirection(-1);
     tempSpeed = map(xAxis,highThresh,maxThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
       sprintf(buf,"Speed: %d",tempSpeed);
-      Serial1.println(buf);
+      Serial.println(buf);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
@@ -114,7 +115,7 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Forward & Left
   }else if((xAxis<lowThresh)&&(yAxis>highThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Driving left...");
+      Serial.println("Driving left...");
     }
     motorL.setDirection(1);
     motorR.setDirection(1);
@@ -129,8 +130,8 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = pwmMax;
     }
     if(runDiagnostics == true){
-      sprintf(buf,"Left: %d, Right: %d",speedLeft,speedRight);
-      Serial1.println(buf);
+      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
+      Serial.println(buf);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
@@ -138,7 +139,7 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Forward & Right
   }else if((xAxis>highThresh)&&(yAxis>highThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Driving right...");
+      Serial.println("Driving right...");
     }
     motorL.setDirection(1);
     motorR.setDirection(1);
@@ -153,8 +154,8 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = 0;
     }
     if(runDiagnostics == true){
-      sprintf(buf,"Left: %d, Right: %d",speedLeft,speedRight);
-      Serial1.println(buf);
+      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
+      Serial.println(buf);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
@@ -162,7 +163,7 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Backward & Left
   }else if((xAxis<lowThresh)&&(yAxis<lowThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Backing left...");
+      Serial.println("Backing left...");
     }
     motorL.setDirection(-1);
     motorR.setDirection(-1);
@@ -177,8 +178,8 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = pwmMax;
     }
     if(runDiagnostics == true){
-      sprintf(buf,"Left: %d, Right: %d",speedLeft,speedRight);
-      Serial1.println(buf);
+      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
+      Serial.println(buf);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
@@ -186,7 +187,7 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
   // Backward & Right
   }else if((xAxis>highThresh)&&(yAxis<lowThresh)){
     if(runDiagnostics==true){
-      Serial1.println("Backing right...");
+      Serial.println("Backing right...");
     }
     motorL.setDirection(-1);
     motorR.setDirection(-1);
@@ -200,12 +201,18 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
     if(speedRight < 0){
       speedRight = 0;
     }
+    if(runDiagnostics == true){
+      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
+      Serial.println(buf);
+    }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
     
   // Not moving
   }else{
-    Serial1.println("Stopping...");
+    if(runDiagnostics==true){
+      Serial.println("Stopping..."); 
+    }
     motorL.setDirection(0);
     motorR.setDirection(0);
     
@@ -213,11 +220,18 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
 }
 
 void setup() {
-  Serial1.begin(9600);
-  Serial1.println("Starting...");
+  Serial.begin(9600);
+  if(runDiagnostics==true){
+    Serial.println("Starting program...");
+  }
 }
 
 void loop() {
+  if(runDiagnostics==true){
+    sprintf(buf,"Run Counter: %d",runCount);
+    Serial.println(buf);
+  }
   motorSet(joystick.getX(),joystick.getY());
-  delay(100);
+  runCount++;
+  delay(200);
 }

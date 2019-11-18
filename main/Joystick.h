@@ -6,15 +6,15 @@
 class Joystick{
 	public:
 		Joystick(byte xAxisPin, byte yAxisPin, byte switchPin);
-		void read();
-		int getX();
-		int getY();
+		void read(); // unused!
+		uint16_t getX();
+		uint16_t getY();
 	private:
 		byte _xAxisPin;
 		byte _yAxisPin;
 		byte _switchPin;
-		int _xAxis;
-		int _yAxis;
+		uint16_t _xAxis;
+		uint16_t _yAxis;
 };
 
 #endif

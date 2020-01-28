@@ -3,12 +3,8 @@
 
 #include "Arduino.h"
 
-/*
-  This is a library for using a two axis, one switch 
-  joystick, and was developed by S.Casey on Tuesday,
-  November 12th, 2019 for the AUBIE Cart senior design
-  project.
-*/
+/* - This is a library for using a two axis, one switch joystick, and was developed by S.Casey on Tuesday, November 12th, 2019 for the 
+      AUBIE Cart senior design project. */
 
 class Joystick{
 	public:

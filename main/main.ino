@@ -8,30 +8,38 @@
 #include "Joystick.h"
 #include "Motor.h"
 #include "Wire.h"
-#include "TxRx.h"
+#include "TxRx.h" // replace with an HC12 library or an EPS library
+#include "Encoder.h"
 #include <MPU9250.h>
 
 // ----- Definitions -----
-#define encoderLpin 25
-#define encoderRpin 24
-#define timeout 300
 #define delayTime 100
+#define maxRuns 30
 
 // ----- Main Variables -----
-bool runDiagnostics = false;
-bool joystickActive = false;
+bool errorLEDstate = LOW;
+bool runDiagnostics = true;
+//bool joystickActive = false;
 uint16_t runCount = 0;
-uint16_t maxRuns = 20;
-uint8_t x,y;
+uint16_t x = 512, y;
 
 // ----- Object Declerations -----
-Joystick joystick(A1,A0,8);
+Joystick joystick(vrx,vry,swi);
 Motor motorR(enA,in1,in2,false);
 Motor motorL(enB,in3,in4,false);
 MPU9250 frontIMU(Wire,MPUF);
 //MPU9250 rearIMU(Wire,MPUR); // not implemented
+Encoder encoderL(LEFT_ENCODER_CHA,LEFT_ENCODER_CHB);
+Encoder encoderR(RIGHT_ENCODER_CHA,RIGHT_ENCODER_CHB);
 
 // ----- Functions -----
+
+void blinkErrorLED(){
+  /* - Function to change the state of an LED then wait a half second. This function is typically used in a while loop that
+          runs indefinitely. */
+  errorLEDstate = !errorLEDstate;
+  delay(500);
+}
 
 // - Function to take an angle, determine the correct motor directions, then drive the motors appropriately until the
 //    gyroscope readings indicate that the angle has been covered.
@@ -63,86 +71,80 @@ void driveDistance(char direct, float distance){ // unimplemented
 
 // - Function to take the state of the joystick, then determine and set the speed and direction of the motors.
 void motorSet(uint16_t xAxis, uint16_t yAxis){
+  uint16_t xAxisP = map(xAxis,0,1023,1023,0);
   uint8_t tempSpeed = 0;
   uint8_t speedLeft = 0;
   uint8_t speedRight = 0;
   uint8_t xMapped = 0;
 
-  if(runDiagnostics == true){
-//    sprintf(buf,"X: %d, Y: %d",xAxis,yAxis);
-//    Serial.println(buf);
+  if(runDiagnostics){
+    Serial1.print("X: ");
+    Serial1.print(xAxisP);
+    Serial1.print(", Y: ");
+    Serial1.println(yAxis);
   }
   
   // Get the direction and speed for the motors.
   // Forward
-  if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis>highThresh)){
-    if(runDiagnostics == true){
-      Serial.println("Driving forward...");
-    }
+  if(((xAxisP>lowThresh)&&(xAxisP<highThresh))&&(yAxis>highThresh)){
     motorL.setDirection(1);
     motorR.setDirection(1);
-    tempSpeed = map(yAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
-//      sprintf(buf,"Speed: %d",tempSpeed);
-//      Serial.println(buf);
+      Serial1.println("Driving forward...");
+      Serial1.print("Speed: ");
+      Serial1.println(tempSpeed);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
     
+  
+  }
   //Backward
-  }else if(((xAxis>lowThresh)&&(xAxis<highThresh))&&(yAxis<lowThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Driving backward...");
-    }
+  else if(((xAxisP>lowThresh)&&(xAxisP<highThresh))&&(yAxis<lowThresh)){
     motorL.setDirection(-1);
     motorR.setDirection(-1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
-//      sprintf(buf,"Speed: %d",tempSpeed);
-//      Serial.println(buf);
+      Serial1.println("Driving backward...");
+      Serial1.print("Speed: ");
+      Serial1.println(tempSpeed);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
-    
+  }
   // Left
-  }else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxis<lowThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Rotating left...");
-    }
+  else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxisP<lowThresh)){
     motorL.setDirection(-1);
     motorR.setDirection(1);
-    tempSpeed = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    tempSpeed = map(xAxisP,lowThresh,minThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
-//      sprintf(buf,"Speed: %d",tempSpeed);
-//      Serial.println(buf);
+      Serial1.println("Rotating left...");
+      Serial1.print("Speed: ");
+      Serial1.println(tempSpeed);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
-    
+  }
   // Right
-  }else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxis>highThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Rotating right...");
-    }
+  else if(((yAxis>lowThresh)&&(yAxis<highThresh))&&(xAxisP>highThresh)){
     motorL.setDirection(1);
     motorR.setDirection(-1);
-    tempSpeed = map(xAxis,highThresh,maxThresh,pwmThresh,pwmMax);
+    tempSpeed = map(xAxisP,highThresh,maxThresh,pwmThresh,pwmMax);
     if(runDiagnostics == true){
-//      sprintf(buf,"Speed: %d",tempSpeed);
-//      Serial.println(buf);
+      Serial1.println("Rotating right...");
+      Serial1.print("Speed: ");
+      Serial1.println(tempSpeed);
     }
     motorL.setPWM(tempSpeed);
     motorR.setPWM(tempSpeed);
-    
+  }
   // Forward & Left
-  }else if((xAxis<lowThresh)&&(yAxis>highThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Driving left...");
-    }
+  else if((xAxisP<lowThresh)&&(yAxis>highThresh)){
     motorL.setDirection(1);
     motorR.setDirection(1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
-    xMapped = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    xMapped = map(xAxisP,lowThresh,minThresh,pwmThresh,pwmMax);
     speedLeft = tempSpeed - xMapped;
     speedRight = tempSpeed + xMapped;
     if(speedLeft < 0){
@@ -152,21 +154,21 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = pwmMax;
     }
     if(runDiagnostics == true){
-//      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
-//      Serial.println(buf);
+      Serial1.println("Driving left...");
+      Serial1.print("Speed L: ");
+      Serial1.print(speedLeft);
+      Serial1.print(", Speed R: ");
+      Serial1.println(speedRight);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
-    
+  }
   // Forward & Right
-  }else if((xAxis>highThresh)&&(yAxis>highThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Driving right...");
-    }
+  else if((xAxisP>highThresh)&&(yAxis>highThresh)){
     motorL.setDirection(1);
     motorR.setDirection(1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
-    xMapped = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    xMapped = map(xAxisP,lowThresh,minThresh,pwmThresh,pwmMax);
     speedLeft = tempSpeed + xMapped;
     speedRight = tempSpeed - xMapped;
     if(speedLeft > pwmMax){
@@ -176,21 +178,21 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = 0;
     }
     if(runDiagnostics == true){
-//      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
-//      Serial.println(buf);
+      Serial1.println("Driving right...");
+      Serial1.print("Speed L: ");
+      Serial1.print(speedLeft);
+      Serial1.print(", Speed R: ");
+      Serial1.println(speedRight);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
-    
+  }
   // Backward & Left
-  }else if((xAxis<lowThresh)&&(yAxis<lowThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Backing left...");
-    }
+  else if((xAxisP<lowThresh)&&(yAxis<lowThresh)){
     motorL.setDirection(-1);
     motorR.setDirection(-1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
-    xMapped = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    xMapped = map(xAxisP,lowThresh,minThresh,pwmThresh,pwmMax);
     speedLeft = tempSpeed - xMapped;
     speedRight = tempSpeed + xMapped;
     if(speedLeft < 0){
@@ -200,21 +202,21 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = pwmMax;
     }
     if(runDiagnostics == true){
-//      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
-//      Serial.println(buf);
+      Serial1.println("Backing left...");
+      Serial1.print("Speed L: ");
+      Serial1.print(speedLeft);
+      Serial1.print(", Speed R: ");
+      Serial1.println(speedRight);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
-    
+  }
   // Backward & Right
-  }else if((xAxis>highThresh)&&(yAxis<lowThresh)){
-    if(runDiagnostics==true){
-      Serial.println("Backing right...");
-    }
+  else if((xAxisP>highThresh)&&(yAxis<lowThresh)){
     motorL.setDirection(-1);
     motorR.setDirection(-1);
     tempSpeed = map(yAxis,highThresh,maxThresh,pwmThresh,pwmMax);
-    xMapped = map(xAxis,lowThresh,minThresh,pwmThresh,pwmMax);
+    xMapped = map(xAxisP,lowThresh,minThresh,pwmThresh,pwmMax);
     speedLeft = tempSpeed + xMapped;
     speedRight = tempSpeed - xMapped;
     if(speedLeft > pwmMax){
@@ -224,16 +226,19 @@ void motorSet(uint16_t xAxis, uint16_t yAxis){
       speedRight = 0;
     }
     if(runDiagnostics == true){
-//      sprintf(buf,"L: %d, R: %d",speedLeft,speedRight);
-//      Serial.println(buf);
+      Serial1.println("Backing right...");
+      Serial1.print("Speed L: ");
+      Serial1.print(speedLeft);
+      Serial1.print(", Speed R: ");
+      Serial1.println(speedRight);
     }
     motorL.setPWM(speedLeft);
     motorR.setPWM(speedRight);
-    
+  }
   // Not moving
-  }else{
+  else{
     if(runDiagnostics==true){
-      Serial.println("Stopping..."); 
+      Serial1.println("Stopping..."); 
     }
     motorL.setDirection(0);
     motorR.setDirection(0);
@@ -248,8 +253,6 @@ void packetReader(char * address){
   
   char packet[packetMax];
   strcpy(packet,address);
-  Serial.print("Packet: ");
-  Serial.println(packet);
   free(address);
   char to = packet[1];
   char from = packet[2];
@@ -275,7 +278,7 @@ void packetReader(char * address){
   Serial.print("Data is: ");
   Serial.println(data);
   
-  if(from == consoleCode){ // if it is from console
+  if(from == CONSOLE_CODE){ // if it is from console
     Serial.println("Is from the console...");
     if(type == commandCode){ // if is of type command
       Serial.println("Is a command...");
@@ -310,16 +313,16 @@ void packetReader(char * address){
     }else if(type == infoCode){
       char code = data[0];
       switch(code){
-        case frontIMUcode:
+        case FRONT_IMU_CODE:
           Serial.println("Front IMU...");
           break;
-        case backIMUcode:
+        case BACK_IMU_CODE:
           Serial.println("Back IMU...");
           break;
-        case leftEncoderCode:
+        case LEFT_ENCODER_CODE:
           Serial.println("Left encoder...");
           break;
-        case rightEncoderCode:
+        case RIGHT_ENCODER_CODE:
           Serial.println("Right encoder...");
           break;
         default:
@@ -330,65 +333,127 @@ void packetReader(char * address){
   }
 }
 
-unsigned long encoderCheck(){
-  unsigned long pulseR = pulseIn(encoderRpin,HIGH,timeout);
-  unsigned long pulseL = pulseIn(encoderLpin,HIGH,timeout);
-  return (pulseR + pulseL) / 2; // cast the calculated average to an unsigned long then return it
-}
-
 void setup(){
   Serial1.begin(9600);
-  Serial1.println("Starting...");
-
-  // Start the front gyroscope, reporting the success or failure to the console
-  if(frontIMU.begin() < 0){ // if it failed
-    char message[] = {errorCode,frontIMUcode,'\0'};
-    tx(consoleCode,myName,infoCode,sizeof(message),message);
-    // add an LED that can be activated when there is an error
-    while(true){} // stops the program from continuing
-  }else{ // if it didn't fail
-    char message[] = {successCode,frontIMUcode,'\0'};
-    tx(consoleCode,myName,infoCode,sizeof(message),message);
+  if(runDiagnostics){
+    Serial1.println("-------------------------------");
+    Serial1.println("Starting...");
+    Serial1.print("Time: ");
+    Serial1.println(millis());
   }
 
-  Serial1.print("Time: ");
-  Serial1.println(millis());
+  // Start the front gyroscope, reporting the status to the console
+  if(frontIMU.begin() < 0){ // if it failed to start
+    char message[] = {FRONT_IMU_CODE,ERROR_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+    while(true){blinkErrorLED();} // stops the program from continuing
+  }else{ // if it didn't fail
+    char message[] = {FRONT_IMU_CODE,SUCCESS_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+  }
+
+  // Start the left encoder, reporting the status to the console
+  if(encoderL.beginEncoder() < 0){ // if it failed to start
+    char message[] = {LEFT_ENCODER_CODE,ERROR_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+    while(1){blinkErrorLED();}
+  }else{
+    char message[] = {LEFT_ENCODER_CODE,SUCCESS_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+  }
+
+  // start the right encoder, reporting the status to the console
+  if(encoderR.beginEncoder() < 0){ // if it failed to start
+    char message[] = {RIGHT_ENCODER_CODE,ERROR_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+    while(1){blinkErrorLED();}
+  }else{
+    char message[] = {RIGHT_ENCODER_CODE,SUCCESS_CODE,'\0'};
+    tx(CONSOLE_CODE,MY_NAME,STATUS_CODE,sizeof(message),message);
+  }
+
+  // timer setup
+  noInterrupts();
+  TCCR5A = 0;
+  TCCR5B = 0;
+  TCNT5 = 0;
+  interrupts();
+  TCCR5B |= (1<<CS50);
+
   
-  pinMode(encoderLpin,INPUT_PULLUP);
-  pinMode(encoderRpin,INPUT_PULLUP);
-  motorL.setDirection(1);
-  motorR.setDirection(1);
-  motorL.setPWM(255);
-  motorR.setPWM(255);
+  // left encoder ISR setup
+  attachInterrupt(digitalPinToInterrupt(LEFT_ENCODER_CHA),leftEncoderISR,RISING);
+  // right encoder ISR setup
+  attachInterrupt(digitalPinToInterrupt(RIGHT_ENCODER_CHA),rightEncoderISR,RISING);
+  
+  if(runDiagnostics){
+    Serial1.println("\nStartup complete...");
+    Serial1.print("Time: ");
+    Serial1.println(millis());
+    Serial1.println("-------------------------------");
+  }
 }
 
+// test code block selector
+uint8_t block = 3;
 void loop(){
-  x = joystick.getX();
-  y = joystick.getY();
-  motorSet(x,y);
-  Serial1.print(millis());
-  Serial1.print(",");
-  Serial1.print(x);
-  Serial1.print(",");
-  Serial1.print(y);
-  Serial1.print(",");
-  Serial1.print(pulseIn(24,HIGH,300));
-  Serial1.print(",");
-  Serial1.println(pulseIn(25,HIGH,300));
-  delay(delayTime);
-  
-//    // read and print data
-//    frontIMU.readSensor();
-//
-//    // old method - replace
-//    Serial1.print(runCount);
-//    Serial1.print(",");
-//    Serial1.print(millis());
-//    Serial1.print(",");
-//    Serial1.print(frontIMU.getGyroX_rads(),6);
-//    Serial1.print(",");
-//    Serial1.print(frontIMU.getGyroY_rads(),6);
-//    Serial1.print(",");
-//    Serial1.println(frontIMU.getGyroZ_rads(),6);
+  if(block == 0){ // drive test w/ reducing speed
+    
+  }
+  else if(block == 1){ // gyro testing
+    // read and print data
+    frontIMU.readSensor();
 
+    // old method - replace
+    Serial1.print(runCount);
+    Serial1.print(",");
+    Serial1.print(millis());
+    Serial1.print(",");
+    Serial1.print(frontIMU.getGyroX_rads(),6);
+    Serial1.print(",");
+    Serial1.print(frontIMU.getGyroY_rads(),6);
+    Serial1.print(",");
+    Serial1.println(frontIMU.getGyroZ_rads(),6);
+  }
+  else if(block == 2){ // encoder testing
+    Serial1.print(millis());
+    Serial1.print(", L Count: ");
+    Serial1.print(encoderL.getLastCount());
+    Serial1.print(", L Period: ");
+    Serial1.print(encoderL.getLastPeriod());
+    Serial1.print(", R Count: ");
+    Serial1.print(encoderR.getLastCount());
+    Serial1.print(", R Period: ");
+    Serial1.println(encoderR.getLastCount());
+    delay(100);
+  }
+  else if(block == 3){
+    motorL.setPWM(230);
+    motorR.setPWM(255);
+    motorR.setDirection(1);
+    motorL.setDirection(1);
+    for(uint8_t i = 0; i < 20; i++){
+      Serial1.print(millis());
+      Serial1.print(", L Count: ");
+      Serial1.print(encoderL.getLastCount());
+      Serial1.print(", L Period: ");
+      Serial1.print(encoderL.getLastPeriod());
+      Serial1.print(", R Count: ");
+      Serial1.print(encoderR.getLastCount());
+      Serial1.print(", R Period: ");
+      Serial1.println(encoderR.getLastPeriod());
+      delay(50);
+    }
+    motorR.halt();
+    motorL.halt();
+    while(1){} // stop from going any further
+  }
+}
+
+void leftEncoderISR(){
+  encoderL.measureISR();
+}
+
+void rightEncoderISR(){
+  encoderR.measureISR();
 }

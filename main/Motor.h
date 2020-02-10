@@ -22,7 +22,8 @@ class Motor{
 		void setPWM(uint8_t PWMspeed);
     void setDirection(int8_t direct);
     void halt();
-		
+		uint8_t getPWM();
+    uint8_t getDirection();
 };
 
 #endif

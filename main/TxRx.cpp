@@ -63,7 +63,7 @@ char * rx(){
   char * buf = (char*)malloc(packetMax); // packet buffer to catch incoming data
   strcpy(buf,packet);
   
-  if(packet[1] == myName){ // if packet is to me
+  if(packet[1] == MY_NAME){ // if packet is to me
     return buf;
   }else{ // if packet is NOT to me
     // dumps the packet

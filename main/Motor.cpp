@@ -42,7 +42,17 @@ void Motor::setDirection(int8_t direct){
 }
 
 void Motor::halt(){
-  analogWrite(_pwmPin,0);
+  _speed = 0;
+  _direction = noDirection;
   digitalWrite(_redPin,LOW);
   digitalWrite(_bluePin,LOW);
+  analogWrite(_pwmPin,0);
+}
+
+uint8_t Motor::getPWM(){
+  return _speed;
+}
+
+uint8_t Motor::getDirection(){
+  return _direction;
 }

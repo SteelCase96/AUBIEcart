@@ -3,6 +3,7 @@
 
 // ----- General -----
 #define MY_NAME 'R'
+#define COMMAND_SEPARATOR char(31) // the unit separator character
 
 
 // ----- Encoders -----
@@ -10,6 +11,7 @@
 #define LEFT_ENCODER_CHB 0
 #define RIGHT_ENCODER_CHA 3
 #define RIGHT_ENCODER_CHB 0
+#define COUNTS_PER_FOOT 21752
 
 
 // ----- Joystick -----
@@ -73,7 +75,8 @@
 #define robotCode 'R'
 #define CONSOLE_CODE 'C'
 // - Type code list -
-#define commandCode 'C'
+//#define commandCode 'C'
+#define COMMAND_CODE 'C'
 #define STATUS_CODE 'S'
 #define infoCode 'I' // information report; or request info, like location, speed, distance traveled, &c.
 // - Command code list -
@@ -82,13 +85,16 @@
 #define leftCode 'L' // rotate left
 #define rightCode 'R' // rotate right
 #define joystickCode 'J' // toggle joystick active
-#define subsystemCode 'D' // communicate with a subsystem, like a sensor, to activate or to request data
+#define COMMAND_SEQUENCE_CODE 'C'
+#define SUBSYSTEM_CODE 'D' // communicate with a subsystem, like a sensor, to activate or to request data
 // - Information code list -
 #define ERROR_CODE 'E'
 #define SUCCESS_CODE 'S'
 #define textCode 'T'
 // - Subsystem code list -
 #define generalCode 'G' // no particular subsystem
+#define TURN_CONTROLLER 'T'
+#define DRIVE_CONTROLLER 'D'
 #define FRONT_IMU_CODE 'F' // front IMU
 #define BACK_IMU_CODE 'B' // back IMU
 #define LEFT_ENCODER_CODE 'L' // left encoder
